@@ -1,13 +1,8 @@
-import React,{useContext,useState} from 'react'
+import React from 'react'
 import PostCard from "../Post/PostCard";
-import { Box, Grid } from "@mui/material";
-import UserConnected from '../../context/UserConnected';
+import { Box } from "@mui/material";
 
-
-export default function ProfilePosts() {
-
-    const { userConnected } = useContext(UserConnected);
-    const [posts,setPosts] = useState(userConnected.posts || "");
+export default function ProfilePosts({ posts }) {
 
     return (
         <Box sx={{ display: 'flex', overflowX: 'scroll' }}>
@@ -16,7 +11,6 @@ export default function ProfilePosts() {
                     return <PostCard key={index} post={post} />;
                 })}
         </Box>
-
     )
 }
 

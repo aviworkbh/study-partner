@@ -1,43 +1,68 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import UserConnected from "../../context/UserConnected";
-import PostSending from "./PostSending";
 import UrlContext from "../../context/UrlContext.js";
-
 import {
+  Paper,
+  Popover,
   Tooltip,
   Button,
-  Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Typography,
   Grid,
-  IconButton,
   Avatar,
-  Box
+  Box,
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
-import CloseIcon from "@mui/icons-material/Close";
-import axios from "axios";
-
-export default function ExtendedPost({ handleClose, post, setIsSendingEmail, setEmailSent  }) {
+export default function ExtendedPost({ post, setIsSendingEmail, setEmailSent }) {
 
   const { urlServer } = useContext(UrlContext);
   const { userConnected } = useContext(UserConnected);
   const navigae = useNavigate();
-  
+  const [week] = useState(["Sun", "Mon", "Tue", "Wen", "Thu", "Fri", "Sat"]);
+  const [day, setDay] = useState(-1);
+  const [openAnchorEl, setOpenAnchorEl] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const handleDeletePost = async () => {
+    try {
+      const answer = await axios.post(`${urlServer}/post/delete`, { id: post.id }, { withCredentials: true });
+      console.log(post.id);
+      console.log(answer);
+      //need alert if succeed or faild
+    }
+    catch (err) {
+      console.log(err);
+    }
+
+  }
+
+  const handleEdit = () => {
+   ////////////////////////////////////////
+  }
+
+  const handleDeletePostButton = (event) => {
+    setAnchorEl(event.currentTarget)
+    setOpenAnchorEl(true);
+  }
 
   const handleBeMyPartner = async () => {
     try {
+      if (day < 0) {
+        return;
+      }
       setIsSendingEmail(true);
       const answer = await axios.post(
         urlServer + "/activity/react-to-post",
-        { the_applicant_id: userConnected.id, postId: post.id },
+        { the_applicant_id: userConnected.id, postId: post.id, day: day },
         { withCredentials: true }
       );
       if (!answer.data) {
-        
+
         throw new Error('fail to send email');
       }
       console.log(answer.data);
@@ -47,240 +72,101 @@ export default function ExtendedPost({ handleClose, post, setIsSendingEmail, set
       setEmailSent(-1);
     }
   };
-
-  return (  
-         <Box>
-          {/* <Box>  
-          <DialogTitle>
-            222
-            <IconButton
-              onClick={() => {
-                handleClose()
-              }}
-              sx={{
-                position: "absolute",
-                right: 8,
-                top: 8,
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          </Box> */}
-          <DialogContent sx={{ padding: 5 }}>
-              <Grid container spacing={2} columns={16}>
-                <Grid item xs={10}>
-                  <Typography gutterBottom variant="body1">
-                    Hi, my name is {post.auther_name}
-                  </Typography>
-                  <Typography gutterBottom variant="body1">
-                    I am looking for a partner to study
-                  </Typography>
-                  <Typography gutterBottom variant="body1">
-                    {post.category}, {post.sub_category}
-                  </Typography>
-                  <Typography gutterBottom variant="body1">
-                    on {post.date} between {post.time_from} to {post.time_to}
-                  </Typography>
-                  <Typography gutterBottom variant="body1" marginTop={3} marginLeft={3}>
-                    {post.post}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Avatar
-                    variant="rounded"
-                    alt="Remy Sharp"
-                    src={require('./cardPics/' + post.category + '.jpg')}
-                    sx={{ width: 175, height: 175 }}
-                  />
-                </Grid>
-              </Grid>
-              <DialogActions sx={{ paddingTop: 5 }}>
-                <Button
-                  onClick={() => {
-                    userConnected && (userConnected.id === post.user_id) ?
-                      navigae("/profile")
-                      : navigae("/user", { state: { userId: post.user_id } })
-                  }}
-                  variant="outlined"
+  return (
+    <Box>
+      <DialogContent>
+        <Grid container spacing={2} columns={16} sx={{p:1,pt:2}}>
+          <Grid item xs={10} >
+            <Box>
+            <Typography gutterBottom variant="body1">
+              Hi, my name is {post.auther_name}
+            </Typography>
+            <Typography gutterBottom variant="body1">
+              I am looking for a partner to study
+            </Typography>
+            <Typography gutterBottom variant="body1">
+              {post.category}, {post.sub_category}
+            </Typography>
+            <Typography gutterBottom variant="body1">from {post.date_from} to {post.date_to}</Typography>
+            <Typography gutterBottom variant="body1">in the time between {post.time_from} to {post.time_to}</Typography>
+            </Box>
+            <Box sx={{mt:2}}>
+              {week?.map((item, index) => {
+                return <Button key={index}
+              sx={{ /*m: 0.3*/mr:0.5,mb:0.5 }}
                   size="small"
-                >
-                  View profile
+                  variant={day !== index ?"outlined":"contained"} 
+                  disabled={post.days[index] < 1}
+                  onClick={() => {
+                    day === index ? setDay(-1) : setDay(index)
+                  }}>{item}</Button>
+              })}
+            </Box>
+          </Grid>
+          <Grid item xs={6} >
+            <Avatar
+              variant="rounded"
+              alt="Remy Sharp"
+              src={require('./cardPics/' + post.category + '.jpg')}
+              sx={{ width: 200, height: 200, borderRadius: '50%' }}
+            />
+          </Grid>
+        </Grid>
+        {post.post && <Box sx={{p:1}}><Paper><Typography p={1} gutterBottom variant="body1" >{post.post}</Typography></Paper></Box> }
+        <DialogActions sx={{ pt:2,pb:2 }}>
+          {userConnected && (userConnected.id === post.user_id) &&
+            <Box>
+              <Tooltip title="Delete Post"><Button onClick={handleDeletePostButton}><DeleteIcon /></Button></Tooltip>
+              <Popover
+                open={openAnchorEl}
+                anchorEl={anchorEl}
+                onClose={() => { setOpenAnchorEl(false) }}
+              >
+                <Paper sx={{p: 1.5 }}>
+                  <Typography variant="body2">Are you sure you want to delete this post?</Typography>
+                  <Box >
+                  <Button size="small" color="error" onClick={handleDeletePost}>Delete</Button>
+                  <Button size="small" onClick={() => { setOpenAnchorEl(false); setAnchorEl(null) }}>Cancel</Button>
+                  </Box>
+                </Paper>
+              </Popover>
+            </Box>
+          }
+          {userConnected && (userConnected.id === post.user_id) && <Tooltip title="Edit Post"><Button onClick={handleEdit}><EditIcon /></Button></Tooltip>}
+          <Button
+            onClick={() => {
+              userConnected && (userConnected.id === post.user_id) ?
+                navigae("/profile")
+                : navigae("/user", { state: { userId: post.user_id } })
+            }}
+            variant="outlined"
+            size="small"
+          >
+            View profile
+          </Button>
+          {userConnected ? (
+            (userConnected.id !== post.user_id) && <Button
+              onClick={handleBeMyPartner}
+              disabled={day === -1}
+              variant="outlined"
+              size="small"
+            >
+              be my partner
+            </Button>
+          ) : (
+            <Tooltip
+              title="Only logged-in users can use this feature."
+              arrow
+            >
+              <span style={{ marginLeft: "5px" }}>
+                <Button variant="outlined" disabled size="small">
+                  be my partner
                 </Button>
-                {userConnected ? (
-                  (userConnected.id !== post.user_id) && <Button
-                    onClick={handleBeMyPartner}
-                    variant="outlined"
-                    size="small"
-                  >
-                    be my partner
-                  </Button>
-                ) : (
-                  <Tooltip
-                    title="Only logged-in users can use this feature."
-                    arrow
-                  >
-                    <span style={{ marginLeft: "5px" }}>
-                      <Button variant="outlined" disabled size="small">
-                        be my partner
-                      </Button>
-                    </span>
-                  </Tooltip>
-                )}
-              </DialogActions>
-          </DialogContent>
-        </Box> 
+              </span>
+            </Tooltip>
+          )}
+        </DialogActions>
+      </DialogContent>
+    </Box>
   );
 }
-
-
-
-
-
-// import React, { useContext, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import UserConnected from "../../context/UserConnected";
-// import PostSending from "./PostSending";
-// import UrlContext from "../../context/UrlContext.js";
-
-// import {
-//   Tooltip,
-//   Button,
-//   Dialog,
-//   DialogTitle,
-//   DialogContent,
-//   DialogActions,
-//   Typography,
-//   Grid,
-//   IconButton,
-//   Avatar,
-//   Box
-// } from "@mui/material";
-
-// import CloseIcon from "@mui/icons-material/Close";
-// import axios from "axios";
-
-// export default function ExtendedPost({ openMore, setOpenMore, post }) {
-
-//   const { urlServer } = useContext(UrlContext);
-//   const { userConnected } = useContext(UserConnected);
-//   const navigae = useNavigate();
-//   const [isSendingEmail, setIsSendingEmail] = useState(false);
-//   const [emailSent, setEmailSent] = useState(false);
-//   const [emailFailed, setEmailFailed] = useState(false);
-
-//   const handleBeMyPartner = async () => {
-//     try {
-//       setIsSendingEmail(true);
-//       const answer = await axios.post(
-//         urlServer + "/activity/react-to-post",
-//         { the_applicant_id: userConnected.id, postId: post.id },
-//         { withCredentials: true }
-//       );
-//       if (!answer.data) {
-//         setEmailFailed(true);
-//         throw new Error('fail to send email');
-//       }
-//       setEmailSent(true);
-//       console.log(answer.data);
-//     } catch (err) {
-//       setEmailFailed(true);
-//       console.log(err);
-//     }
-//   };
-
-//   const handleClickOpen = () => {
-//     setOpenMore(true);
-//   };
-
-//   const handleClose = () => {
-//     setOpenMore(false);
-//   };
-//   return (
-//     <Box>
-//       <Dialog open={openMore} onClose={handleClose} fullWidth={true}>
-//         {!isSendingEmail ? <Box>
-//           <DialogTitle>
-//             <IconButton
-//               onClick={() => {
-//                 setOpenMore(false);
-//                 setIsSendingEmail(false);
-//               }}
-//               sx={{
-//                 position: "absolute",
-//                 right: 8,
-//                 top: 8,
-//               }}
-//             >
-//               <CloseIcon />
-//             </IconButton>
-//           </DialogTitle>
-
-//           <DialogContent sx={{ padding: 5 }}>
-//               <Grid container spacing={2} columns={16}>
-//                 <Grid item xs={10}>
-//                   <Typography gutterBottom variant="body1">
-//                     Hi, my name is {post.auther_name}
-//                   </Typography>
-//                   <Typography gutterBottom variant="body1">
-//                     I am looking for a partner to study
-//                   </Typography>
-//                   <Typography gutterBottom variant="body1">
-//                     {post.category}, {post.sub_category}
-//                   </Typography>
-//                   <Typography gutterBottom variant="body1">
-//                     on {post.date} between {post.time_from} to {post.time_to}
-//                   </Typography>
-//                   <Typography gutterBottom variant="body1" marginTop={3} marginLeft={3}>
-//                     {post.post}
-//                   </Typography>
-//                 </Grid>
-//                 <Grid item xs={6}>
-//                   <Avatar
-//                     variant="rounded"
-//                     alt="Remy Sharp"
-//                     src={require('./cardPics/' + post.category + '.jpg')}
-//                     sx={{ width: 175, height: 175 }}
-//                   />
-//                 </Grid>
-//               </Grid>
-//               <DialogActions sx={{ paddingTop: 5 }}>
-//                 <Button
-//                   onClick={() => {
-//                     userConnected && (userConnected.id === post.user_id) ?
-//                       navigae("/profile")
-//                       : navigae("/user", { state: { userId: post.user_id } })
-//                   }}
-//                   variant="outlined"
-//                   size="small"
-//                 >
-//                   View profile
-//                 </Button>
-//                 {userConnected ? (
-//                   (userConnected.id !== post.user_id) && <Button
-//                     onClick={handleBeMyPartner}
-//                     variant="outlined"
-//                     size="small"
-//                   >
-//                     be my partner
-//                   </Button>
-//                 ) : (
-//                   <Tooltip
-//                     title="Only logged-in users can use this feature."
-//                     arrow
-//                   >
-//                     <span style={{ marginLeft: "5px" }}>
-//                       <Button variant="outlined" disabled size="small">
-//                         be my partner
-//                       </Button>
-//                     </span>
-//                   </Tooltip>
-//                 )}
-//               </DialogActions>
-//           </DialogContent>
-//         </Box> :
-//           <PostSending emailSent={emailSent} emailFailed={emailFailed} />}
-//       </Dialog>
-//     </Box>
-//   );
-// }

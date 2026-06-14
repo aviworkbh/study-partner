@@ -41,7 +41,6 @@ const getOneUser = async (req, res) => {
 
 const updateUser = async (req,res) => {
     try {
-        console.log('test 1');
           const answer = await UserService.updateUser(req.body);
           if(answer.message){
             throw new Error(answer.message);

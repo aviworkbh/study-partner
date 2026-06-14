@@ -40,7 +40,21 @@ const getSubject = async (req, res) => {
     }
 }
 
+const removeUserSubject = async (req,res) => {
+    try {
+       const  answer = await userSubjectService.removeUserSubject(req);
+       if(answer.message){
+        throw new Error(answer.message)
+       }
+       res.status(200).send(answer);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(200).send(err.message);
+    }
+}
+
 module.exports = {
-    addUserSubject, getUsers, getSubject
+    addUserSubject, getUsers, getSubject,removeUserSubject
 }
 

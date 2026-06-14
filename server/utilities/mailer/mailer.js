@@ -21,9 +21,8 @@ const transferMail = async (emailDestination, titleMessage, bodyMessage,htmlBody
             },
         );
         console.log(sent);
-        console.log("email sent");
-        return 'email sent'
-        
+            console.log("email sent");
+            return 'email sent'
     }
     catch (err) {
         console.log("err", err);

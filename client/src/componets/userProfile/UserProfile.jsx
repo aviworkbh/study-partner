@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useContext} from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import axios from 'axios';
 import UserPosts from './UserPosts';
@@ -24,13 +24,13 @@ export default function UserProfile() {
   const [rate, setRate] = useState(null);
   const [isRating, setIsRating] = useState(false);
   const { userConnected } = useContext(UserConnected);
-  const {urlServer} = useContext(UrlContext);
+  const { urlServer } = useContext(UrlContext);
 
   useEffect(() => {
     (async () => {
       try {
         const userData = await axios.post(
-          urlServer+"/user/get-one",
+          `${urlServer}/user/get-one`,
           { id: userId }
         );
         setUser(userData.data);
@@ -40,10 +40,10 @@ export default function UserProfile() {
         console.log(err);
       }
     })()
-  }, [])
+  }, [urlServer,userId])
   const handleRate = async (newValue) => {
     console.log('newVal >>', newValue);
-    const newRate = await axios.put(urlServer+'/activity/rate-user',
+    const newRate = await axios.put(urlServer + '/activity/rate-user',
       { email: user.email, rate: newValue },
       { withCredentials: true });
 
@@ -54,7 +54,6 @@ export default function UserProfile() {
   const handleCancelRate = () => {
     setIsRating(rating => !rating)
   }
-
   return (
     <Box>
       {user ? (
@@ -135,32 +134,6 @@ export default function UserProfile() {
                   >
                     <Typography variant="caption">Country:</Typography>{" "}
                     <Typography sx={{}}>{user.country}</Typography>{" "}
-                  </Paper>
-                  <Paper
-                    sx={{
-                      display: "flex",
-                      m: 3,
-                      padding: 2,
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      minWidth: "130px",
-                    }}
-                  >
-                    <Typography variant="caption">Email:</Typography>{" "}
-                    <Typography sx={{}}>{user.email}</Typography>{" "}
-                  </Paper>
-                  <Paper
-                    sx={{
-                      display: "flex",
-                      m: 3,
-                      padding: 2,
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      minWidth: "130px",
-                    }}
-                  >
-                    <Typography variant="caption">Phone Number:</Typography>{" "}
-                    <Typography sx={{}}>{user.phone_number}</Typography>{" "}
                   </Paper>
                   <Paper
                     sx={{

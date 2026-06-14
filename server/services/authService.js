@@ -1,12 +1,12 @@
 const bcrypt = require('bcrypt');
+const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS);
 const jwt = require('jsonwebtoken');
 const AuthRepo = require('../repositories/authRepo');
 const UserRepo = require('../repositories/userRepo');
 const { emailValid, passwordValid } = require('../utilities/validations/validations');
-const nodeMailer = require('nodemailer');
 const { cookieParse } = require('../utilities/cookieParse/cookieParse')
 const { transferMail } = require('../utilities/mailer/mailer');
-const {convertToReadingPossibility} =require('../utilities/adjustingData/adjustungPostData')
+const {convertToReadingPossibility} =require('../utilities/post/adjustungPostData')
 
 const auth = async (req, res) => {
     try {
@@ -23,7 +23,22 @@ const auth = async (req, res) => {
         if (isVarify.email) {
             console.log(true);
         }
-        return true
+        const user = await  UserRepo.getOneUser(null,obj.id);
+        if(!user){
+            return true
+        }
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            country: user.country,
+            languages: user.languages,
+            phone_number: user.phone_number,
+            age: user.age,
+            about: user.about || null,
+            posts: (user.posts && user.posts.map((post) => { return convertToReadingPossibility(post) })) || null,
+            subjects: user.subjects || null,
+        };
     }
     catch (err) {
         console.log(err);
@@ -42,7 +57,6 @@ const logIn = async (req, res) => {
             throw new Error('email or password are not correct');
         }
         const isComparePassword = await bcrypt.compare(password, answer.password);
-        console.log(isComparePassword);
         if (!isComparePassword) {
             throw new Error('email or password are not correct');
         }
@@ -50,12 +64,14 @@ const logIn = async (req, res) => {
             algorithm: 'HS256',
             expiresIn: '24h',
         });
-
         res.cookie(process.env.TOKEN_NAME, accessToken, {
             maxAge: 1000 * 60 * 60 * 24,
             httpOnly: false
         })
-
+        res.cookie('id', answer.id, {
+            maxAge: 1000 * 60 * 60 * 24,
+            httpOnly: false
+        })
         return {
             id: answer.id,
             name: answer.name,
@@ -73,7 +89,6 @@ const logIn = async (req, res) => {
         console.log(err);
         return err;
     }
-
 }
 
 
@@ -94,59 +109,23 @@ const forgetPassword = async (reqBody) => {
         const emailDestination =user.email;
         const titleMessage ='temporary code from study partner'; 
         const bodyMessage =`<div>
-        <h4>hii avi! </h4>
+        <h4>hii ${user.name} </h4>
         <p>your temporary password is: ${newPass}  please do not share this password to anybody.. 
         have a nice day !!</p>
         </div>`;
         // const bodyMessage =`your temporary password is: ${newPass}  please do not share this password to anybody`
-        const sendMail = transferMail(emailDestination,titleMessage,'',bodyMessage);   
-        console.log(sendMail);
+        const updatePassword= await UserRepo.updateUser(email,null, { refresh_token: newPass });
+        if(updatePassword.message ){
+            throw Error('Faild to Update password');
+        }
+        const sendMail = await transferMail(emailDestination,titleMessage,'',bodyMessage);   
+        return sendMail
+
     }
     catch (err) {
         console.log(err);
         return err
     }
-
-    // try {
-    //     const { email } = reqBody;
-    //     if (!email) {
-    //         throw Error('please send email');
-    //     }
-    //     else if (!emailValid(email)) {
-    //         throw Error('email not valid');
-    //     }
-    //     const user = await UserRepo.getOneUser(email);
-    //     if (!user) {
-    //         throw Error('email not macth please try again');
-    //     }
-    //     const newPass = Math.random().toString(36).slice(2, 8);
-    //     const mailTransporter = await nodeMailer.createTransport({
-    //         service: 'gmail',
-    //         auth: {
-    //             user: process.env.EMAIL_URL,
-    //             pass: process.env.EMAIL_PASS,
-    //         }
-    //     });
-    //     mailTransporter.sendMail(
-    //         {
-    //             from: 'study-partner',
-    //             to: user.email,
-    //             subject: 'code from study partner',
-    //             text: `your temporary password is: ${newPass}  please do not share this password to anybody`
-    //         },
-    //         async (err, data) => {
-    //             if (err) {
-    //                 throw new Error('err to send')
-    //             }
-    //             const answer = UserRepo.updateUser(email, { refresh_token: newPass });
-    //             // console.log(data);
-    //             return answer;
-    //         })
-    // }
-    // catch (err) {
-    //     console.log(err);
-    //     return err
-    // }
 }
 
 const resetPassword = async (reqBody) => {
@@ -166,6 +145,9 @@ const resetPassword = async (reqBody) => {
         }
         const hashPssword = bcrypt.hashSync(password, BCRYPT_ROUNDS);
         const answer = await AuthRepo.resetPassword(code, hashPssword);
+        if(answer.message){
+            throw new Error(answer.message);
+        }
         return answer;
     }
     catch (err) {

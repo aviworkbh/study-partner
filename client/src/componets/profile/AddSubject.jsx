@@ -1,22 +1,21 @@
 import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import UserConnected from '../../context/UserConnected';
-import { Box, Button, InputLabel, MenuItem, FormControl, Typography } from '@mui/material';
+import UrlContext from "../../context/UrlContext.js";
+import { Box, Button, InputLabel, MenuItem, FormControl, Typography, Select } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
 
-export default function AddSubject({ addSubject, setAddSubject }) {
+export default function AddSubject({ setAddSubject }) {
     const { userConnected } = useContext(UserConnected);
+    const { urlServer } = useContext(UrlContext);
     const [cat, setCat] = useState('');
-    const [subCat, setSubCat] = useState("");
-    // const [catValue, setCatValue] = useState('');
-    // const [subValue, setSubValue] = useState('');
+    const [subCat, setSubCat] = useState('');
     const [subjectId, setSubjectId] = useState();
+
     useEffect(() => {
         (async () => {
             try {
-                const categoryOBJ = await (await axios.get("http://localhost:3005/category/get-all")).data;
-                console.log(categoryOBJ);
+                const categoryOBJ = await (await axios.get(`${urlServer}/category/get-all`)).data;
                 if (!categoryOBJ) {
                     throw new Error("category could not be reched");
                 }
@@ -28,21 +27,21 @@ export default function AddSubject({ addSubject, setAddSubject }) {
                 console.log(err);
             }
         })()
-    }, [])
+    }, [urlServer])
 
     const handleChangeCat = (event) => {
-        const {target:{value}} = event
-        const sub = cat.filter((item)=>item.id == value.id);
+        const { target: { value } } = event
+        const sub = cat.filter((item) => item.id === value.id);
         setSubCat(sub[0].subjects)
     };
 
     const handleChangeSub = (event) => {
         setSubjectId(event.target.value);
     }
-    
+
     const handleSave = async () => {
         try {
-            await axios.post('http://localhost:3005/user-subject/add', { userId: userConnected.id, subjectId });
+            await axios.post(`${urlServer}/user-subject/add`, { userId: userConnected.id, subjectId });
         }
         catch (err) {
             console.log(err);
@@ -54,27 +53,23 @@ export default function AddSubject({ addSubject, setAddSubject }) {
         <Box>
             {cat ? <Box sx={{ m: 2 }}>
                 <Typography sx={{ m: 1 }} variant='h6' color="primary">Please select Subject to add</Typography>
-                <FormControl sx={{ m: 1, minWidth:180 }}>
+                <FormControl sx={{ m: 1, minWidth: 180 }}>
                     <InputLabel>Category</InputLabel>
                     <Select
                         label="Category"
-                        placeholder='Category'
                         onChange={handleChangeCat}
-                        value={""}
+                        value={''}
                     >
                         {cat && cat.map((item, index) => {
-                            return <MenuItem  key={index}  value={{ id: item.id, name: item.name }}>{item.name}</MenuItem>
-                            
+                            return <MenuItem key={index} value={{ id: item.id, name: item.name }}>{item.name}</MenuItem>
                         })}
                     </Select>
                 </FormControl>
-
-                <FormControl sx={{ m: 1, minWidth:180 }} >
+                <FormControl sx={{ m: 1, minWidth: 180 }} >
                     <InputLabel>Sub Category</InputLabel>
                     <Select
-                        disabled={!subCat? true :false}
+                        disabled={!subCat ? true : false}
                         label="Sub Category"
-                        placeholder='Sub Category'
                         onChange={handleChangeSub}
                         value={''}
                     >
@@ -85,9 +80,9 @@ export default function AddSubject({ addSubject, setAddSubject }) {
                 </FormControl>
 
                 <Button sx={{ m: 1, height: "55px" }} size="large" variant='contained' startIcon={<AddIcon fontSize='small' />} onClick={handleSave}>Add</Button>
-                <Button sx={{ m: 1, height: "55px" }} size="large" variant='outlined' onClick={()=>{setAddSubject(addSubject => !addSubject)}}>Cancel</Button>
-            </Box> : <Box>
-            </Box>}
+                <Button sx={{ m: 1, height: "55px" }} size="large" variant='outlined' onClick={() => { setAddSubject(addSubject => !addSubject) }}>Cancel</Button>
+            </Box>
+                : <Box></Box>}
         </Box>
     );
 }

@@ -1,239 +1,256 @@
-import axios from "axios";
 import React, { useEffect, useState, useContext } from "react";
+import axios from "axios";
 import UserConnected from "../../context/UserConnected";
+import UrlContext from "../../context/UrlContext.js";
+import { daysDistance, weekIsEmpty, getOptionalsDays } from '../../utilities/validetion/validateDate';
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import CircularProgress from "@mui/material/CircularProgress";
-import UrlContext from "../../context/UrlContext.js";
-
+import dayjs from 'dayjs';
 import {
   Box,
   Button,
   TextField,
   Autocomplete,
-  Grid,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Alert,
+  Typography,
 } from "@mui/material/";
-import { width } from "@mui/system";
-const dateTime = new Date();
+
+const tempDate = dayjs(new Date().setHours(0, 0, 0, 0));
 
 export default function CreatePost({ open, setOpen }) {
   const { urlServer } = useContext(UrlContext);
   const { userConnected } = useContext(UserConnected);
+
+  const [alertMessage, setAlertMessage] = useState('')
+  const [opanAlert, setOpanAlert] = useState(false);
+  const [alertMode, setAlertMode] = useState('')
+
   const [valueCategory, setValueCategory] = useState("");
   const [valueSubCategory, setValueSubCategory] = useState("");
-  const [date, setDate] = useState(new Date(new Date().setHours(0, 0, 0, 0)));
-  const [fromTime, setFromTime] = useState(dateTime);
-  const [toTime, setToTime] = useState(dateTime);
   const [inputCategory, setInputCategory] = useState("");
   const [inputSubCategory, setInputSubCategory] = useState("");
+
+  const [dateFrom, setDateFrom] = useState(tempDate);
+  const [dateTo, setDateTo] = useState(tempDate);
+  const [timeFrom, setTimeFrom] = useState(tempDate);
+  const [timeTo, setTimeTo] = useState(tempDate);
   const [option, setOption] = useState(null);
   const [comment, setComment] = useState("");
-  const [alert, setAlert] = useState(false);
-  const [alertContent, setAlertContent] = useState("");
-  const [alertSeverity, setAlertSeverity] = useState("");
+  const [days, setDays] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [week] = useState(["Sun", "Mon", "Tue", "Wen", "Thu", "Fri", "Sat"]);
+  const [loading, setLoading] = useState(false);
+  const [rendering, setRendering] = useState(true);
+
 
   useEffect(() => {
     (async () => {
       try {
-        const result = await axios.get(urlServer + "/category/get-all");
-        console.log(result);
+        const result = await axios.get(`${urlServer}/category/get-all`);
         setOption(result.data);
       } catch (err) {
         console.log(err);
       }
     })();
-  }, []);
+  }, [urlServer]);
+
+  const handleOpenAlert = (alertStatus, message) => {
+    setAlertMode(alertStatus);
+    setAlertMessage(message)
+    setOpanAlert(true);
+    setTimeout(() => {
+      setOpanAlert(false);
+    }, 3500)
+  }
 
   const handleOptionSub = () => {
     const cat = option.find((item) => item.name === valueCategory);
     return cat.subjects.map((subject) => subject.name);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   const handlePost = async () => {
     try {
-      ///validation
-      if (
-        !valueCategory ||
-        !valueSubCategory ||
-        !date ||
-        !fromTime ||
-        !toTime
-      ) {
-        setAlertSeverity("error");
-        setAlert(true);
-        setAlertContent("missing details");
-        setTimeout(() => {
-          setAlert(false);
-        }, 5000);
-      } else {
-        const tempDate =
-          (date.$y && new Date(date.$y, date.$M, date.$D, 0, 0)) || date;
-        const tempFrom =
-          (fromTime.$H &&
-            new Date(
-              tempDate.getFullYear(),
-              tempDate.getMonth(),
-              tempDate.getDate(),
-              fromTime.$H,
-              fromTime.$m
-            )) ||
-          new Date(
-            tempDate.getFullYear(),
-            tempDate.getMonth(),
-            tempDate.getDate(),
-            fromTime.getHours(),
-            fromTime.getMinutes()
-          );
-        const tempTo =
-          (toTime.$H &&
-            new Date(
-              tempDate.getFullYear(),
-              tempDate.getMonth(),
-              tempDate.getDate(),
-              toTime.$H,
-              toTime.$m
-            )) ||
-          new Date(
-            tempDate.getFullYear(),
-            tempDate.getMonth(),
-            tempDate.getDate(),
-            toTime.getHours(),
-            toTime.getMinutes()
-          );
-
-        if (tempFrom.getTime() > tempTo.getTime()) {
-          alert("the time to start should be early from the ending time");
-        }
-        if (tempFrom.getTime() < new Date().getTime()) {
-          alert("the time to start shouldn't be early from now");
-        } else {
-          ////create obj to fetch
-          const postObj = {
-            userId: userConnected.id || null,
-            auther_name: userConnected.name || null,
-            post: comment || null,
-            category: inputCategory,
-            sub_category: valueSubCategory,
-            date: tempDate.getTime(),
-            time_from: tempFrom.getTime(),
-            time_to: tempTo.getTime(),
-          };
-          ///fetch to seever
-          const answer = await axios.post(urlServer + "/post/add", postObj);
-          console.log(answer);
-          setAlertSeverity("success");
-          setAlert(true);
-          setAlertContent("post published");
-          setTimeout(() => {
-            setAlert(false);
-          }, 3000);
-          setTimeout(() => {
-            setOpen(false);
-          }, 2000);
-          
-        }
+      if (!valueSubCategory) {
+        handleOpenAlert("error", "Please the subject you want to study");
+        return;
       }
+      const dFrom = dateFrom.$d.getTime();
+      const dTo = dateTo.$d.getTime();
+      const tFrom = (timeFrom.$H)*100 +timeFrom.$m;
+      const tTo = (timeTo.$H)*100 +timeTo.$m;
+      // //validation   
+      if (dTo < dFrom) {
+        handleOpenAlert("error", "The end date can not be earlier from the start");
+        return;
+      }
+      if (tFrom > tTo) {
+        handleOpenAlert("error", "the time not valid.");
+        return;
+      }
+      if (tFrom === tTo) {
+        handleOpenAlert("error", "please pick correct time");
+        return;
+      }
+      if (daysDistance(dFrom, dTo) > 7) {
+        handleOpenAlert("error", "You can have maximum a week range of date"); return;
+      }
+      if (weekIsEmpty(days)) {
+        handleOpenAlert("error", "Please pick a day or more to study in"); return;
+      }
+      setLoading(true);
+      const post = {
+        userId: userConnected.id || null,
+        auther_name: userConnected.name || null,
+        post: comment || null,
+        category: inputCategory,
+        sub_category: inputSubCategory,
+        date_from: dFrom,
+        date_to: dTo,
+        time_from: tFrom,
+        time_to: tTo,
+        days: days || null
+      }
+      await axios.post(urlServer + "/post/add", post);
+      setLoading(false);
+      handleOpenAlert("success", "post published");
+      setTimeout(() => {
+        window.location.reload();
+        // setOpen(false);
+      }, 4000);
+
     } catch (err) {
-      alert("post faild");
+      handleOpenAlert("error", "post faild");
       console.log(err);
     }
   };
 
+  const handleAbleDays = (df, dt) => {
+    const distance = daysDistance(df, dt);
+    if (distance < 8){
+      setDays(getOptionalsDays(df.$W, distance));
+    }      
+  }
+
   return (
     <div>
       {option ? (
-        <Dialog open={open} onClose={handleClose}>
-          <DialogTitle>Post</DialogTitle>
-          <DialogContent>
-            <Box margin={1}>
-              {alert ? (
-                <Alert severity={alertSeverity}>{alertContent}</Alert>
-              ) : (
-                <></>
-              )}
+        <Dialog open={open} onClose={() => setOpen(false)}>
+          {loading && <Box sx={{ position: 'relative' }}>
+            <Box sx={{ backgroundColor: 'gray', display: 'flex', position: 'absolute', width: '100%', height: '536px', opacity: '0.5', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress />
             </Box>
-            <Grid container spacing={3}>
-              <Grid item xs={6}>
-                <Autocomplete
-                  options={option.map((category) => category.name)}
-                  value={valueCategory}
-                  inputValue={inputCategory}
-                  onChange={(event, newValue) => {
-                    setValueCategory(newValue);
-                  }}
-                  onInputChange={(event, newInputValue) => {
-                    setInputCategory(newInputValue);
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Category" />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Autocomplete
-                  options={valueCategory ? handleOptionSub() : []}
-                  value={valueSubCategory}
-                  inputValue={inputSubCategory}
-                  onChange={(event, newValue) => {
-                    setValueSubCategory(newValue);
-                  }}
-                  onInputChange={(event, newInputValue) => {
-                    setInputSubCategory(newInputValue);
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Sub Category" />
-                  )}
-                />
-              </Grid>
+          </Box>}
+          <Box m={1} >
+            <DialogTitle >
+              {opanAlert ? <Box mb={4} sx={{ position: 'relative', width: '100%' }}><Alert onClose={() => setOpanAlert(false)} sx={{ position: 'absolute', width: '100%' }} severity={alertMode}>{alertMessage}</Alert></Box> : <Typography variant="body4">{"Post"}</Typography>}
+            </DialogTitle>
 
+          </Box>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+              <Autocomplete
+                sx={{ width: '47%', m: 1 }}
+                options={option.map((category) => category.name)}
+                onChange={(event, newValue) => {
+                  setValueCategory(newValue);
+                }}
+                onInputChange={(event, newInputValue) => {
+                  setInputCategory(newInputValue);
+                }}
+
+                renderInput={(params) => (
+                  <TextField {...params} label="Category" />
+                )}
+              />
+              <Autocomplete
+                sx={{ width: '47%', m: 1 }}
+                options={valueCategory ? handleOptionSub() : [""]}
+                onChange={(event, newValue) => {
+                  setValueSubCategory(newValue);
+                }}
+                onInputChange={(event, newInputValue) => {
+                  setInputSubCategory(newInputValue);
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Sub Category" />
+                )}
+              />
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Grid item xs={6}>
+                <Box sx={{ width: '47%', m: 1 }}>
+                  <DatePicker
+                    label="From day"
+                    disablePast
+                    value={dateFrom}
+                    inputFormat="DD/MM/YYYY"
+                    renderInput={(params) => <TextField {...params} />}
+                    onChange={(newValue) => {
+                      newValue && setDateFrom(newValue);
+                      handleAbleDays(newValue, dateTo)
+                    }}
+                  />
+                </Box>
+                <Box sx={{ width: '47%', m: 1 }}>
+                  <DatePicker
+                    label="To day"
+                    disablePast
+                    value={dateTo}
+                    inputFormat="DD/MM/YYYY"
+                    renderInput={(params) => <TextField {...params} />}
+                    onChange={(newValue) => {
+                      newValue && setDateTo(newValue);
+                      handleAbleDays(dateFrom, newValue)
+                    }}
+                  />
+                </Box>
+                <Box sx={{ width: '47%', m: 1 }}>
                   <TimePicker
                     label="From Time"
-                    value={fromTime}
+                    value={timeFrom}
                     onChange={(newValue) => {
+                      newValue && setTimeFrom(newValue);
                       console.log(newValue);
-                      newValue && setFromTime(newValue);
                     }}
                     ampm={false}
                     renderInput={(params) => <TextField {...params} />}
                   />
-                </Grid>
-                <Grid item xs={6}>
+                </Box>
+                <Box sx={{ width: '47%', m: 1 }}>
                   <TimePicker
-                    label="To Time"
-                    value={toTime}
+                    label="To time"
+                    value={timeTo}
                     onChange={(newValue) => {
-                      newValue && setToTime(newValue);
+                      newValue && setTimeTo(newValue);
                     }}
                     ampm={false}
                     renderInput={(params) => <TextField {...params} />}
                   />
-                </Grid>
-                <Grid item xs={6}>
-                  <DatePicker
-                    label="Date"
-                    value={date || null}
-                    onChange={(newValue) => {
-                      newValue && setDate(newValue);
-                    }}
-                    renderInput={(params) => <TextField {...params} />}
-                  />
-                </Grid>
+                </Box>
               </LocalizationProvider>
-
-              <Grid item xs={12}>
+              <Box sx={{ width: '100%', m: 1 }}>
+                {week?.map((item, index) => {
+                  return <Button
+                    disabled={days[index] < 0}
+                    key={index}
+                    variant={days[index] !== 0 ? "contained" : "outlined"}
+                    size="small"
+                    sx={{ m: 0.4, width: '13%', }}
+                    onClick={() => {
+                      let temp = days;
+                      temp[index] = 0 + 1 - temp[index]
+                      setRendering(!rendering) //dont delete. it needed to render component
+                      setDays(temp);
+                    }}
+                  >
+                    {item}</Button>
+                })}
+              </Box>
+              <Box sx={{ width: '100%', m: 1 }}>
                 <TextField
                   value={comment}
                   fullWidth
@@ -244,12 +261,14 @@ export default function CreatePost({ open, setOpen }) {
                     setComment(event.target.value);
                   }}
                 ></TextField>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handlePost}>Post</Button>
+            <Box sx={{ marginRight: '2%' }}>
+              <Button onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={handlePost}>Post</Button>
+            </Box>
           </DialogActions>
         </Dialog>
       ) : (

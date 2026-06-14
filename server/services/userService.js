@@ -1,9 +1,8 @@
+const UserRepo = require('../repositories/userRepo');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS);
 const { nameValid, emailValid, passwordValid, countryValid, languagesValid, phone_numberValid, age_rangeValid: ageValid } = require('../utilities/validations/validations');
-const UserRepo = require('../repositories/userRepo');
-const {convertToReadingPossibility} = require('../utilities/adjustingData/adjustungPostData');
+const {convertToReadingPossibility} = require('../utilities/post/adjustungPostData');
 
 const addUser = async (reqBody) => {
 
@@ -21,8 +20,6 @@ const addUser = async (reqBody) => {
         else if (phone_number && !phone_numberValid) { throw Error('phone number is not valid') }
         else if (age && !ageValid) { throw Error('age is not valid') }
         else {
-            console.log('age >>' ,age);
-            console.log('typeof age >>' ,typeof age);
             const hashPssword = bcrypt.hashSync(password, BCRYPT_ROUNDS);
             const answer = await UserRepo.addUser({
                 name,
@@ -75,12 +72,7 @@ const getOneUser = async (reqBody) => {
     const { email, id } = reqBody;
     try {
         const answer = await UserRepo.getOneUser(email || null, id || null);
-        console.log('email>>', email);
-        console.log('id>>', id);
         if (!answer.message) {
-            console.log('answer' ,answer);
-            console.log('age >>' ,  answer.age);
-            console.log('age type >>',  typeof answer.age);
             return {
                 id: answer.id,
                 name: answer.name,
@@ -105,9 +97,6 @@ const getOneUser = async (reqBody) => {
 const updateUser = async (reqBody) => {
 
     const {id, email, name, country, languages, phone_number, age, about, rate } = reqBody
-    console.log('test 2');
-    console.log('id >>' ,id);
-    console.log('email >>' ,email);
     try {
         const newValues = {
             name: name || undefined,

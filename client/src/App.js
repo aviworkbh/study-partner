@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import UserConnected from './context/UserConnected';
 import UrlContext from './context/UrlContext';
 import Home from './componets/home/Home';
-import { Experimental_CssVarsProvider as CssVarsProvider,ThemeProvider } from '@mui/material/styles';
+import { Experimental_CssVarsProvider as CssVarsProvider } from '@mui/material/styles';
 import axios from 'axios';
 import CssBaseline from '@mui/material/CssBaseline';
 // import theme from './style/theme';
@@ -11,37 +11,31 @@ import CssBaseline from '@mui/material/CssBaseline';
 function App() {
   const [userConnected, setUserConnected] = useState(null);
   const [urlServer] = useState('http://localhost:3005');
+
   useEffect(() => {
     (async () => {
       try {
-        const auth = await (await axios.get(urlServer+'/auth/', { withCredentials: true })).data
+        // const auth = await (await axios.get('http://localhost:3005/auth/', { withCredentials: true })).data
+        const auth = await (await axios.get( `${urlServer}/auth/`, { withCredentials: true })).data
         if (!auth) {
           setUserConnected(null);
           sessionStorage.clear()
         }
         else {
-          const userId = JSON.parse(sessionStorage.getItem("user_id")) ||null
-          if (!userId || userId === undefined) {
-            throw new Error("somthing wrong to get user details");
-          }
-          const user = await axios.post(urlServer+'/user/get-one', { id: userId }, { withCredentials: true });
-          if(!user.data){
-            throw new Error("somthing wrong to get user details");
-          }
-            setUserConnected(user.data);
+          setUserConnected(auth);
         }
       }
       catch (err) {
         console.log(err.message);
       }
     })()
-  }, []);
+  }, [urlServer]);
 
-  useEffect(() => {
-    if (userConnected) {
-      sessionStorage.setItem('user', JSON.stringify(userConnected))
-    }
-  }, [userConnected])
+  // useEffect(() => {
+  //   if (userConnected) {
+  //     sessionStorage.setItem('user', JSON.stringify(userConnected))
+  //   }
+  // }, [userConnected])
 
   return (
     <div className="App">

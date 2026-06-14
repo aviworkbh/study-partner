@@ -1,5 +1,4 @@
-
-const { UserModel,PostModel,SubjectModel } = require('../models/Models')
+const { UserModel, PostModel, SubjectModel } = require('../models/Models')
 
 const addUser = async (user) => {
     try {
@@ -27,19 +26,16 @@ const getAllUsers = async () => {
     }
 }
 
-const   getOneUser = async (email,id) => {
-
+const getOneUser = async (email, id) => {
     try {
         let answer;
-        if(email){
-            answer = await UserModel.findOne({ where: { email },include:[PostModel,SubjectModel]});
+        if (email) {
+            answer = await UserModel.findOne({ where: { email }, include: [PostModel, SubjectModel] });
         }
-            
-        else if(id) {
-            console.log('email found');
-            answer = await UserModel.findOne({ where: { id },include:[PostModel,SubjectModel]});
+
+        else if (id) {
+            answer = await UserModel.findOne({ where: { id }, include: [PostModel, SubjectModel] });
         }
-        console.log('answer', answer);
         if (!answer) {
             throw new Error('user not found');
         }
@@ -50,17 +46,16 @@ const   getOneUser = async (email,id) => {
     }
 }
 
-const updateUser = async (email,id, updatedValues) => {
+const updateUser = async (email, id, updatedValues) => {
     try {
-        console.log('test 3');
-        let answer ;
-        if(id){
+        let answer;
+        if (id) {
             answer = await UserModel.update(updatedValues, { where: { id } });
         }
-        else if(email){
+        else if (email) {
             answer = await UserModel.update(updatedValues, { where: { email } });
         }
-         
+
         if (!answer[0]) {
             throw new Error('user has not updated');
         }

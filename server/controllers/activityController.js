@@ -26,7 +26,7 @@ const confirmPost = async (req, res) => {
     }
     catch (err) {
         console.log(err);
-        res.status(402).send(err);
+        res.status(401).send(err.message);
     }
 }
 
@@ -36,7 +36,6 @@ const denyPost = async (req, res) => {
         if(answer.message){
             throw new Error(answer.message)
         }
-        console.log('answer');
         res.status(200).send(answer);
         
     }
@@ -53,7 +52,6 @@ const rateUser = async (req, res) => {
             throw new Error(answer.message)
         }
         else{
-            console.log(`return >>>>>${answer}`);
             res.status(200).send(answer);
         }
         

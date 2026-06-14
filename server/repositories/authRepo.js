@@ -41,7 +41,7 @@ const resetPassword = async (code,hashPssword) => {
         if (!user) {
             throw new Error('user not found');
         }
-        const result = await UserModel.update({password:hashPssword,refresh_token:null});
+        const result = await UserModel.update({password:hashPssword,refresh_token:null},{where: { refresh_token: code }});
         if(!result[0]){
             throw new Error('fail to update');
         }

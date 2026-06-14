@@ -14,21 +14,20 @@ import {
   Typography,
 } from "@mui/material";
 
-
 export default function Profie() {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState("1");
   const { userConnected } = useContext(UserConnected);
-  useEffect(() => {
 
-    // setInterval(()=>{
-    //   if (!userConnected) {
-    //     navigate('/')
-    //   }
-    // },5000)
+  useEffect(() => {
+    if (!userConnected) {
+      console.log('navig');
+      navigate('/');
+    }
 
   }, [userConnected, navigate]);
 
+  
   const handleChange = (panel) => {
     if (expanded === panel) {
       setExpanded(" ");
@@ -36,6 +35,7 @@ export default function Profie() {
     }
     setExpanded(panel);
   }
+
   return (
     <Box>
       {userConnected && <Box>
@@ -85,7 +85,7 @@ export default function Profie() {
             <Typography>My Posts</Typography>
           </AccordionSummary>
           <AccordionDetails>
-              <ProfilePosts />
+            <ProfilePosts posts={userConnected.posts} />
           </AccordionDetails>
         </Accordion>
       </Box>
@@ -94,6 +94,3 @@ export default function Profie() {
 
   )
 }
-
-
-

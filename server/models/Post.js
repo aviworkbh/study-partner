@@ -29,7 +29,11 @@ const Post = db.define('post', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    date:{
+    date_from:{
+        type: DataTypes.BIGINT,
+        allowNull: false,
+    },
+    date_to:{
         type: DataTypes.BIGINT,
         allowNull: false,
     },
@@ -41,9 +45,13 @@ const Post = db.define('post', {
         type: DataTypes.BIGINT,
         allowNull: false 
     },
-    mathed:{
+    days: {
+        type: DataTypes.JSON,
+        allowNull: true 
+    },
+    matched:{
         type:DataTypes.TINYINT,
-        defaultValue:1,
+        defaultValue:-1,
     }
 
 },

@@ -1,3 +1,4 @@
+const { and, Op } = require('sequelize');
 const {UserSubject} = require('../models/Models');
 
 const addUserSubject = async (values) => {
@@ -32,6 +33,20 @@ const getSubjects = async (userId) => {
     }
 }
 
+const removeUserSubject = async (userId,subjectId) => {
+    try {
+        const answer = await UserSubject.destroy({where:{userId,subjectId:{[Op.in]:subjectId}}});
+        if(!answer){
+            throw new Error("error with removing, please check the details and try again");
+        }
+        console.log(answer);
+        return 'subject deleted from user';
+    }
+    catch (err) {
+        return err;
+    }
+}
+
 module.exports = PostRepo = {
-    addUserSubject,getUsers,getSubjects
+    addUserSubject,getUsers,getSubjects,removeUserSubject
 }

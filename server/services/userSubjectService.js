@@ -2,8 +2,8 @@ const userSubjectRepo = require('../repositories/userSubjectRepo');
 
 const addUserSubject = async (req) => {
     try {
-        const {userId,subjectId} = req.body;
-        const answer = await  userSubjectRepo.addUserSubject({UserId:userId,SubjectId:subjectId});
+        const { userId, subjectId } = req.body;
+        const answer = await userSubjectRepo.addUserSubject({ UserId: userId, SubjectId: subjectId });
         return answer;
     }
     catch (err) {
@@ -14,7 +14,7 @@ const addUserSubject = async (req) => {
 
 const getUsers = async (reqBody) => {
     try {
-        const {subjectId} = reqBody;
+        const { subjectId } = reqBody;
         const answer = await userSubjectRepo.getUsers(subjectId);
         return answer;
     }
@@ -23,9 +23,10 @@ const getUsers = async (reqBody) => {
         return err;
     }
 }
+
 const getSubjects = async (reqBody) => {
     try {
-        const {userId} = reqBody;
+        const { userId } = reqBody;
         const answer = await userSubjectRepo.getSubjects(userId);
         return answer;
     }
@@ -35,6 +36,18 @@ const getSubjects = async (reqBody) => {
     }
 }
 
-module.exports ={
-    addUserSubject,getUsers,getSubjects   
+const removeUserSubject = async (req) => {
+    try {
+        const { userId, subjectId } = req.body;
+        const answer = await userSubjectRepo.removeUserSubject(userId, subjectId)
+        return answer
+    }
+    catch (err) {
+        console.log('service error >>', err);
+        return err;
+    }
+}
+
+module.exports = {
+    addUserSubject, getUsers, getSubjects, removeUserSubject
 }
