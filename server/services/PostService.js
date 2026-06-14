@@ -5,10 +5,6 @@ const addPost = async (reqBody) => {
     try {
         const { email, userId, auther_name, category, sub_category, post, date, time_from, time_to } = reqBody;
         const PostDetails = { email, userId, auther_name, category, sub_category, post, date: date, time_from: time_from, time_to: time_to };
-        console.log(date);
-        console.log(time_from);
-        console.log(time_to);
-        console.log(typeof date);
         const answer = await PostRepo.addPost(PostDetails);
 
         return answer;

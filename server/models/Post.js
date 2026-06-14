@@ -42,8 +42,8 @@ const Post = db.define('post', {
         allowNull: false 
     },
     mathed:{
-        type:DataTypes.BOOLEAN,
-        defaultValue:false,
+        type:DataTypes.TINYINT,
+        defaultValue:1,
     }
 
 },
